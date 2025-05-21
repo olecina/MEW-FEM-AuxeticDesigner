@@ -255,7 +255,7 @@ class InverseDesignWindow(QtWidgets.QWidget):
 		self.result_table = QtWidgets.QTableWidget()
 		self.result_table.setColumnCount(8)
 		self.result_table.setHorizontalHeaderLabels([
-			"Design", "a", "ab", "d", "yr", "E_aux [kPa]", "ε_aux [-]", "Error [%]"
+			"design", "a", "rba", "d", "yr", "E_aux [kPa]", "ε_aux [-]", "error [%]"
 		])
 		self.result_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 		self.result_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
@@ -325,7 +325,7 @@ class InverseDesignWindow(QtWidgets.QWidget):
 			entry = self.designs[model.row()]
 			params = {
 				"a": entry["a"],
-				"b": round(entry["a"] * entry["ab"], 2),
+				"b": round(entry["a"] * entry["rba"], 2),
 				"d": entry["d"],
 				"xr": 6,
 				"yr": entry["yr"],
