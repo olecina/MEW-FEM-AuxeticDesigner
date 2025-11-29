@@ -236,7 +236,7 @@ class InverseDesignWindow(QtWidgets.QWidget):
 	def __init__(self):
 		super().__init__()
 		self.setWindowTitle("Predictive Mode")
-		self.setGeometry(100, 100, 850, 400)
+		self.setGeometry(100, 100, 840, 600)
 		self.layout = QtWidgets.QVBoxLayout()
 
 		# Target input
@@ -268,6 +268,38 @@ class InverseDesignWindow(QtWidgets.QWidget):
 		# Info label
 		self.result_label = QtWidgets.QLabel("Suggested Designs will appear below.")
 
+		# Image display
+		self.image_panel_layout = QtWidgets.QHBoxLayout()
+
+		design_types = ["HCELL", "SREG", "SINV", "STRI"]
+
+		for design in design_types:
+			vbox_mini = QtWidgets.QVBoxLayout()
+
+			img_label = QtWidgets.QLabel()
+			img_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+			img_label.setFrameStyle(QtWidgets.QFrame.Shape.Box | QtWidgets.QFrame.Shadow.Plain)
+
+			image_path = os.path.join("ui_components", "images", f"{design.lower()}.png")
+
+			if os.path.exists(image_path):
+				pixmap = QtGui.QPixmap(image_path)
+				scaled_pixmap = pixmap.scaled(150, 150, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+				img_label.setPixmap(scaled_pixmap)
+			else:
+				img_label.setText(f"[{design}\nNot Found]")
+
+			text_label = QtWidgets.QLabel(design)
+			text_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+			font = text_label.font()
+			font.setBold(True)
+			text_label.setFont(font)
+
+			vbox_mini.addWidget(img_label)
+			vbox_mini.addWidget(text_label)
+
+			self.image_panel_layout.addLayout(vbox_mini)
+
 		# Layout
 		self.layout.addWidget(self.prop_label)
 		self.layout.addWidget(self.prop_input)
@@ -276,6 +308,10 @@ class InverseDesignWindow(QtWidgets.QWidget):
 		self.layout.addWidget(self.predict_button)
 		self.layout.addWidget(self.result_label)
 		self.layout.addWidget(self.result_table)
+
+		self.layout.addWidget(QtWidgets.QLabel("Available Design Types Reference:"))
+		self.layout.addLayout(self.image_panel_layout)
+
 		self.layout.addWidget(self.generate_button)
 
 		self.setLayout(self.layout)
@@ -289,24 +325,30 @@ class InverseDesignWindow(QtWidgets.QWidget):
 		current_dir = os.getcwd()
 		try:
 			script_dir = os.path.join(current_dir, "models")
-			os.chdir(script_dir)
+			if os.path.exists(script_dir):
+				os.chdir(script_dir)
 
 			rscript_path = find_rscript()
 			if rscript_path is None:
 				print("Rscript.exe not found. Please install R or check your environment.")
+				self.result_label.setText("Error: Rscript not found")
 			else:
 				cmd = f'"{rscript_path}" r_predictor.R {str(target)}'
 				os.system(cmd)
 
 			json_name = "prediction.json"
-			with open(json_name, "r") as f:
-				results = json.load(f)
-				self.show_results(list(results.values()))
+			if os.path.exists(json_name):
+				with open(json_name, "r") as f:
+					results = json.load(f)
+					self.show_results(list(results.values()))
+			else:
+				self.results_label.setText("Prediction failed (no output file).")
 
 		finally:
 			os.chdir(current_dir)
 
 	def show_results(self, results):
+		self.result_table.setRowCount(0)
 		self.result_table.setRowCount(len(results))
 		self.designs = results
 
@@ -325,7 +367,7 @@ class InverseDesignWindow(QtWidgets.QWidget):
 			entry = self.designs[model.row()]
 			params = {
 				"a": entry["a"],
-				"b": round(entry["a"] * entry["rba"], 2),
+				"b": round(entry["a"] * entry["ab"], 2),
 				"d": entry["d"],
 				"xr": 6,
 				"yr": entry["yr"],
